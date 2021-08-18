@@ -1,5 +1,5 @@
 /*
- Highcharts JS v9.2.0 (2021-08-18)
+ Highcharts JS v9.1.2 (2021-08-18)
 
  Force directed graph module
 

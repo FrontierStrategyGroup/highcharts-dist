@@ -244,6 +244,17 @@ var addEvent = U.addEvent, defined = U.defined, extend = U.extend, fireEvent = U
  * @apioption data.firstRowAsNames
  */
 /**
+ * The Google Spreadsheet API key required for access generated at [API Services
+ * / Credentials](https://console.cloud.google.com/apis/credentials).
+ *
+ * @sample {highcharts} highcharts/data/google-spreadsheet/
+ *         Load a Google Spreadsheet
+ *
+ * @type      {string}
+ * @since     4.0
+ * @apioption data.googleApiKey
+ */
+/**
  * The key for a Google Spreadsheet to load. See [general information
  * on GS](https://developers.google.com/gdata/samples/spreadsheet_sample).
  *
@@ -1290,7 +1301,7 @@ var Data = /** @class */ (function () {
      *         Always returns false, because it is an intermediate fetch.
      */
     Data.prototype.parseGoogleSpreadsheet = function () {
-        var data = this, options = this.options, googleSpreadsheetKey = options.googleSpreadsheetKey, chart = this.chart, 
+        var data = this, options = this.options, googleApiKey = options.googleApiKey, googleSpreadsheetKey = options.googleSpreadsheetKey, chart = this.chart, 
         // use sheet 1 as the default rather than od6
         // as the latter sometimes cause issues (it looks like it can
         // be renamed in some cases, ref. a fogbugz case).
@@ -1304,10 +1315,11 @@ var Data = /** @class */ (function () {
          */
         function fetchSheet(fn) {
             var url = [
-                'https://spreadsheets.google.com/feeds/cells',
+                'https://sheets.googleapis.com/v4/spreadsheets',
                 googleSpreadsheetKey,
+                'values',
                 worksheet,
-                'public/values?alt=json'
+                '?alt=json&majorDimension=COLUMNS&key=' + googleApiKey
             ].join('/');
             ajax({
                 url: url,
@@ -1329,57 +1341,17 @@ var Data = /** @class */ (function () {
             delete options.googleSpreadsheetKey;
             fetchSheet(function (json) {
                 // Prepare the data from the spreadsheat
-                var columns = [], cells = json.feed.entry, cell, cellCount = (cells || []).length, colCount = 0, rowCount = 0, val, gr, gc, cellInner, i;
+                var columns = [], cells = json.values, cell, cellCount = (cells || []).length, colCount = 0, rowCount = 0, val, cellInner, i;
                 if (!cells || cells.length === 0) {
                     return false;
                 }
-                // First, find the total number of columns and rows that
-                // are actually filled with data
-                for (i = 0; i < cellCount; i++) {
-                    cell = cells[i];
-                    colCount = Math.max(colCount, cell.gs$cell.col);
-                    rowCount = Math.max(rowCount, cell.gs$cell.row);
-                }
-                // Set up arrays containing the column data
-                for (i = 0; i < colCount; i++) {
-                    if (i >= startColumn && i <= endColumn) {
-                        // Create new columns with the length of either
-                        // end-start or rowCount
-                        columns[i - startColumn] = [];
-                    }
-                }
-                // Loop over the cells and assign the value to the right
-                // place in the column arrays
-                for (i = 0; i < cellCount; i++) {
-                    cell = cells[i];
-                    gr = cell.gs$cell.row - 1; // rows start at 1
-                    gc = cell.gs$cell.col - 1; // columns start at 1
-                    // If both row and col falls inside start and end set the
-                    // transposed cell value in the newly created columns
-                    if (gc >= startColumn && gc <= endColumn &&
-                        gr >= startRow && gr <= endRow) {
-                        cellInner = cell.gs$cell || cell.content;
-                        val = null;
-                        if (cellInner.numericValue) {
-                            if (cellInner.$t.indexOf('/') >= 0 ||
-                                cellInner.$t.indexOf('-') >= 0) {
-                                // This is a date - for future reference.
-                                val = cellInner.$t;
-                            }
-                            else if (cellInner.$t.indexOf('%') > 0) {
-                                // Percentage
-                                val = parseFloat(cellInner.numericValue) * 100;
-                            }
-                            else {
-                                val = parseFloat(cellInner.numericValue);
-                            }
-                        }
-                        else if (cellInner.$t && cellInner.$t.length) {
-                            val = cellInner.$t;
-                        }
-                        columns[gc - startColumn][gr - startRow] = val;
-                    }
-                }
+                // TODO: The prior Google Sheets API v3 version had a mechanism
+                // to allow for sparsely filled arrays and starting row/col
+                // TODO: the Google sheets API v3 had a mechanism to parse
+                // numeric and date values; maintainers to determine if this
+                // is still required
+                // as of GS API v4 we request the data in columns
+                columns = cells;
                 // Insert null for empty spreadsheet cells (#5298)
                 columns.forEach(function (column) {
                     for (i = 0; i < column.length; i++) {
@@ -1488,8 +1460,8 @@ var Data = /** @class */ (function () {
                 if (typeof column[row + 1] !== 'undefined') {
                     descending = floatVal > column[row + 1];
                 }
-                // String, continue to determine if it is a date string or really a
-                // string
+                // String, continue to determine if it is a date string or
+                // really a string
             }
             else {
                 if (trimVal && trimVal.length) {
