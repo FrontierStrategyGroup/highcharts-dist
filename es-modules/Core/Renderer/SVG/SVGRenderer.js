@@ -1254,7 +1254,7 @@ var SVGRenderer = /** @class */ (function () {
             attribs.text = str;
         }
         var wrapper = renderer.createElement('text').attr(attribs);
-        if (!useHTML) {
+        if (!useHTML || (renderer.forExport && !renderer.allowHTML)) {
             wrapper.xSetter = function (value, key, element) {
                 var tspans = element.getElementsByTagName('tspan'), parentVal = element.getAttribute(key);
                 for (var i = 0, tspan = void 0; i < tspans.length; i++) {

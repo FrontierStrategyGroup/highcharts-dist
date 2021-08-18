@@ -105,6 +105,7 @@ var Globals;
      *  Properties
      *
      * */
+    // eslint-disable-next-line prefer-const
     Globals.chartCount = 0;
 })(Globals || (Globals = {}));
 /* *
@@ -113,3 +114,18 @@ var Globals;
  *
  * */
 export default Globals;
+/* *
+ *
+ *  API Declarations
+ *
+ * */
+/**
+ * Theme options that should get applied to the chart. In module mode it
+ * might not be possible to change this property because of read-only
+ * restrictions, instead use {@link Highcharts.setOptions}.
+ *
+ * @deprecated
+ * @name Highcharts.theme
+ * @type {Highcharts.Options}
+ */
+(''); // keeps doclets above in JS file
